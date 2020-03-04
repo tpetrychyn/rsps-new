@@ -4,12 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"github.com/gtank/isaac"
 	"golang.org/x/crypto/xtea"
 	"log"
 	"math/big"
+	"math/rand"
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
+	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
+	"unsafe"
 )
 
 var store = cachestore.NewStore()
@@ -24,6 +28,7 @@ func main() {
 
 	defer listener.Close()
 
+	log.Printf("listening on 43594")
 	for {
 		connection, err := listener.Accept()
 		if err != nil {
@@ -40,7 +45,7 @@ func main() {
 		if requestType == 15 {
 			var gameVersion int32
 			binary.Read(reader, binary.BigEndian, &gameVersion)
-			if gameVersion == 188 {
+			if gameVersion == 181 {
 				connection.Write([]byte{0})
 			}
 			go func() {
@@ -51,7 +56,7 @@ func main() {
 
 		if requestType == 14 {
 			connection.Write([]byte{0}) // proceed
-			serverSeed := uint64(0)
+			serverSeed := rand.Uint64()
 			binary.Write(connection, binary.BigEndian, serverSeed)
 
 			var loginRequest LoginRequest
@@ -62,8 +67,8 @@ func main() {
 			binary.Read(reader, binary.BigEndian, &secureBuf)
 
 			// I got these values by running rsmod in debug and capturing the base 10 values of rsaExponent and rsaModulus
-			e, _ := new(big.Int).SetString("148348469911079630378699587877554458887651856588926334927128326541191536140607970867465114083263709801890018879632658533196772725229915565152894411841475261416271281321582236105823416623786172712681530468166899094383930121268191893149065500392407752356169955528478757272431078241814609679978380952225376033562806433996728228109660312694769828344489814071015621494917392645701473740177821234108724899044366017790970020113106533060374669574194646107810847943186160131430203973239263865745553613943960329586454182123305166944314979813407192463286026550272667116112099818151107537342141656429241609974349952075315876533", 10)
-			m, _ := new(big.Int).SetString("19170145713320489912151859072022254500259096926363991455668617611800271878918623428931512076795588840179453791702324170323331541120739007900995321847618625369808627488899464052761074041318183896353323609269960963555462408592083963811680638618219044683455866301621158049562441644108777919886027277997031442568533720342131888150818546453045613743049280955991189701825453826255427243627707953117170862683363604957024513356381405276233545512575360666085799937115726863049363483383120397664940232273940367851122809637163789793552566567683877420043802465899191878441559550339000760740180073343500614152433988960973619429001", 10)
+			e, _ := new(big.Int).SetString("647938820811174564501994386359961232566329715148620231085023210484768344331719057997549872356145944358302879928019776209939522512099493887127188885541797604448573171793150698254030927402524326168972623509694505212035910746949393405712308360102892779655139499817708596651580539817342635450991423595932014585588510405014175673731955960405352231021121560962415148107396591983917910196047875771120213776287015906226300640663223264593459002543216867384883826063220469591493399234965151408618988915160375744659408215352143147359834065449825250330535673388894408931234365732741021749839941491681984688983902956775387923223", 10)
+			m, _ := new(big.Int).SetString("18845951212332454083776854822768074502513669601639934607217255540895979767143769429570326954651016470938067579197871264181052173601410791958445525182581678695148072893875671021101345647440460126736516835548197274786392923021699589121012703818192613010100627154659830597006336146207911878070145791564189258473567299280325151901023854730803093639677760621428074422539345082901833520173983428905869285592015645143627391159674409357147242143770639015644409263814106735096728020275635955800783094923547218134070829959486241186122853067651743831358738523668508661897945035138609772757816654638520047949322016581053188813993", 10)
 
 			encrypted := big.NewInt(0)
 			encrypted.SetBytes(secureBuf[:])
@@ -83,6 +88,11 @@ func main() {
 
 			var reportedSeed uint64
 			binary.Read(rsaBuffer, binary.BigEndian, &reportedSeed)
+
+			if serverSeed != reportedSeed {
+				connection.Write([]byte{10})
+				break
+			}
 
 			var authType byte
 			binary.Read(rsaBuffer, binary.BigEndian, &authType)
@@ -130,20 +140,90 @@ func main() {
 
 			binary.Read(xteaBuffer, binary.BigEndian, new(int32)) // some int
 
-			binary.Read(xteaBuffer, binary.BigEndian, make([]byte, 53)) // NetSocket.platformInfo
+			// platformInfo
+			binary.Read(xteaBuffer, binary.BigEndian, make([]byte, 18)) // 3 bytes, short, 5 bytes, short, byte, medium, short
+			utils.ReadString(xteaBuffer)
+			utils.ReadString(xteaBuffer)
+			utils.ReadString(xteaBuffer)
+			utils.ReadString(xteaBuffer)
+			binary.Read(xteaBuffer, binary.BigEndian, make([]byte, 3)) // byte, short
+			utils.ReadString(xteaBuffer)
+			utils.ReadString(xteaBuffer)
+			binary.Read(xteaBuffer, binary.BigEndian, make([]byte, 18)) // 2 bytes, 3 ints, int
+			utils.ReadString(xteaBuffer)
+			binary.Read(xteaBuffer, binary.BigEndian, make([]byte, 12)) // unknown 3 bytes that rsmod skips??
 
-			var clientType byte
-			binary.Read(xteaBuffer, binary.BigEndian, &clientType)
-			if clientType != loginRequest.ClientType {
-				log.Printf("client types did not match")
-				connection.Write([]byte{10})
-				continue
-			}
-
-			binary.Read(xteaBuffer, binary.BigEndian, new(uint32)) // 0
 			// should be at Client.java:2899 - var31.packetBuffer.writeInt(GrandExchangeEvent.archive0.hash);
 
-			connection.Write([]byte{10}) // bad session id, speeds up debugging
+			for k, v := range store.Indexes {
+				var crc uint32
+				binary.Read(xteaBuffer, binary.BigEndian, &crc)
+				if k == 16 || k == 20 { // 20 is being read different each time..
+					continue // crc always 0
+				}
+				if crc != v.Crc {
+					log.Printf("crc mismatch on index %d, read %+v, expected %+v", v.Id, crc, v.Crc)
+					connection.Write([]byte{6}) // revision mismatch
+					break
+				}
+			}
+
+			remaining := make([]byte, xteaBuffer.Len())
+			binary.Read(xteaBuffer, binary.BigEndian, &remaining)
+			log.Printf("remaining %+v", remaining)
+
+			inC := isaac.ISAAC{}
+
+			uXteaKeys := *(*[]uint32)(unsafe.Pointer(&xteaKeys))
+			inC.Generate(uXteaKeys)
+			//decryptor := &inC
+
+			for i := 0; i < 4; i++ {
+				uXteaKeys[i] += 50
+			}
+			outC := isaac.ISAAC{}
+			outC.Generate(uXteaKeys)
+			encryptor := &outC
+
+			// TODO: START LoginEncoder This section needs to be abstracted!!
+			outBuffer := new(bytes.Buffer)
+
+			outBuffer.Write([]byte{2, 13, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1}) // successful login packet
+
+			regionBuffer := make([]byte, 0, 4710) // rebuildLoginEncoder gpi
+
+			opcode := byte(0 + (encryptor.Rand() & 0xFF))
+			regionBuffer = append(regionBuffer, opcode)
+
+			payload := []byte{18, 102, 12, 15, 54, -92+256}
+			regionBuffer = append(regionBuffer, payload...)
+
+			pad := 4610 - len(regionBuffer)
+			regionBuffer = append(regionBuffer, make([]byte, pad)...)
+
+			regionBuffer = append(regionBuffer, []byte{0,0,0,0,0,0,0,0}...)
+
+			outBuffer.Write(regionBuffer)
+
+			r := &outgoing.RebuildNormalPacket{
+				X: 386,
+				Z: 437,
+			}
+			regionPacket := r.Write(nil)
+			outBuffer.Write(regionPacket)
+
+			log.Printf("length %d outbytes %+v", len(outBuffer.Bytes()), outBuffer.Bytes())
+			connection.Write(outBuffer.Bytes())
+
+			// TODO: END LoginEncoder
+
+			log.Printf("outbuffer %+v", outBuffer.Bytes())
+
+			b, err := reader.ReadByte()
+			if err != nil {
+				log.Printf("err %s", err.Error())
+			}
+			log.Printf("b %+v", b)
 		}
 	}
 }
