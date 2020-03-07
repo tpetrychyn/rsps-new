@@ -69,6 +69,7 @@ func main() {
 				client := loginHandler.HandleRequest(connection, reader)
 				if client == nil {
 					connection.Close()
+					return
 				}
 
 				for {
