@@ -19,6 +19,6 @@ func NewPlayer() *Player {
 }
 
 func (p *Player) AppendOutgoing() {
-	p.Actor.OutgoingQueue <- &outgoing.send
+	//p.Actor.OutgoingQueue <- &outgoing.send
 	p.Actor.OutgoingQueue <- &outgoing.SendPositionPacket{Position:&models.Position{}}
 }

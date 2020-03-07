@@ -7,8 +7,13 @@ import (
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
 	rsNet "rsps-comm-test/internal/net"
+	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
+	"time"
 )
+
+const revision = 181
+const port = "43594"
 
 func main() {
 	xteaDefs, err := utils.LoadXteas()
@@ -22,13 +27,15 @@ func main() {
 	js5Handler := rsNet.JS5Handler{CacheStore: cacheStore}
 	loginHandler := rsNet.LoginHandler{CacheStore: cacheStore}
 
-	listener, err := net.Listen("tcp", ":43594")
+	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
 	defer listener.Close()
+
+	log.Printf("Listening on port %s", port)
 
 	for {
 		connection, err := listener.Accept()
@@ -41,14 +48,15 @@ func main() {
 		var requestType byte
 		binary.Read(reader, binary.BigEndian, &requestType)
 
-		log.Printf("request type %d", requestType)
-
 		if requestType == 15 {
 			var gameVersion int32
 			binary.Read(reader, binary.BigEndian, &gameVersion)
-			if gameVersion == 181 {
-				connection.Write([]byte{0})
+			if gameVersion != revision {
+				connection.Write([]byte{6}) // out of date
+				continue
 			}
+
+			connection.Write([]byte{0})
 			go func() {
 				// continuously loop through reading js5 request bytes for this socket until error
 				for js5Handler.HandleRequest(connection, reader) {}
@@ -58,12 +66,15 @@ func main() {
 
 		if requestType == 14 {
 			go func () {
-				success := loginHandler.HandleRequest(connection, reader)
-				if !success {
+				client := loginHandler.HandleRequest(connection, reader)
+				if client == nil {
 					connection.Close()
 				}
 
-				// otherwise we have a logged in player
+				for {
+					client.EnqueueOutgoing(&outgoing.PlayerUpdatePacket{})
+					<- time.After(600 * time.Millisecond)
+				}
 			}()
 		}
 	}

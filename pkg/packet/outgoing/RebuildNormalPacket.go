@@ -3,7 +3,6 @@ package outgoing
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"rsps-comm-test/pkg/models"
 	"rsps-comm-test/pkg/utils"
 )
@@ -51,9 +50,6 @@ func (r *RebuildNormalPacket) GetRegionXteas() []byte {
 	if r.Position.X / 8 == 48 && r.Position.Z / 8 == 48 {
 		forceSend = true
 	}
-
-	// 386, 437
-	log.Printf("posx %d posz %d", r.Position.X, r.Position.Z)
 
 	count := 0
 	buf.Write([]byte{0,0}) // make space for size short

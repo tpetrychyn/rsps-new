@@ -14,7 +14,6 @@ import (
 	"rsps-comm-test/pkg/models"
 	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
-	"time"
 	"unsafe"
 )
 
@@ -22,7 +21,7 @@ type LoginHandler struct {
 	CacheStore *cachestore.Store
 }
 
-func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) bool {
+func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) *Client {
 	connection.Write([]byte{0}) // proceed
 	serverSeed := rand.Uint64()
 	binary.Write(connection, binary.BigEndian, serverSeed)
@@ -48,7 +47,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 	binary.Read(rsaBuffer, binary.BigEndian, &successfulDecrypt)
 	if successfulDecrypt != 1 {
 		connection.Write([]byte{10}) // bad session id
-		return false
+		return nil
 	}
 
 	xteaKeys := make([]int32, 4)
@@ -59,14 +58,14 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	if serverSeed != reportedSeed {
 		connection.Write([]byte{10})
-		return false
+		return nil
 	}
 
 	var authType byte
 	binary.Read(rsaBuffer, binary.BigEndian, &authType)
 	if authType != 0 {
 		connection.Write([]byte{10})
-		return false
+		return nil
 	}
 
 	var skip = make([]byte, 5) // authcode 2, unkown 1, another skip
@@ -88,7 +87,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 	xteaCipher, err := xtea.NewCipher(xteaKey)
 	if err != nil {
 		connection.Write([]byte{10})
-		return false
+		return nil
 	}
 
 	xteaEncryptedBytes := make([]byte, reader.Buffered())
@@ -145,7 +144,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	uXteaKeys := *(*[]uint32)(unsafe.Pointer(&xteaKeys))
 	inC.Generate(uXteaKeys)
-	//decryptor := &inC
+	decryptor := &inC
 
 	for i := 0; i < 4; i++ {
 		uXteaKeys[i] += 50
@@ -156,38 +155,21 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	connection.Write([]byte{2, 13, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1})
 
-	rebuildLogin := &outgoing.RebuildLoginPacket{Position:&models.Position{
+	client := NewClient(connection, encryptor, decryptor)
+
+	client.EnqueueOutgoing(&outgoing.RebuildLoginPacket{Position:&models.Position{
 		X:      3094,
 		Z:      3497,
-	}}
-	buf := rebuildLogin.Build()
-	buf[0] = byte(uint32(buf[0]) + (encryptor.Rand() & 0xFF))
+	}})
 
-	log.Printf("%+v", buf)
-	connection.Write(buf)
+	client.EnqueueOutgoing(&outgoing.IfOpenTopPacket{}) // main screen interface?
 
-	// open interface overlay MAIN_SCREEN?
-	by := []byte{byte(uint32(84) + (encryptor.Rand() & 0xFF)), 33, 0}
-	log.Printf("%+v", by)
-	connection.Write(by)
-
-	rebuildNormal := &outgoing.RebuildNormalPacket{Position:&models.Position{
+	client.EnqueueOutgoing(&outgoing.RebuildNormalPacket{Position:&models.Position{
 		X:      3094 >> 3,
 		Z:      3497 >> 3,
-	}}
-	buf = rebuildNormal.Build()
-	buf[0] = byte(uint32(buf[0]) + (encryptor.Rand() & 0xFF))
-	log.Printf("%+v", buf)
-	connection.Write(buf)
+	}})
 
-	// player update packet
-	for {
-
-		by = []byte{byte(uint32(79) + (encryptor.Rand() & 0xFF)), 0, 3, 0, 127, 244}
-		log.Printf("%+v", by)
-		connection.Write(by)
-		<- time.After(600 * time.Millisecond)
-	}
+	return client
 }
 
 type LoginRequest struct {
