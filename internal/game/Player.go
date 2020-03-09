@@ -2,23 +2,21 @@ package game
 
 import (
 	"rsps-comm-test/pkg/models"
+	"rsps-comm-test/pkg/packet"
 	"rsps-comm-test/pkg/packet/outgoing"
 )
 
 type Player struct {
 	Actor *models.Actor
+	OutgoingQueue chan packet.DownstreamMessage
 }
 
 func NewPlayer() *Player {
-	return &Player{Actor: &models.Actor{
-		Position:      &models.Position{},
-		NearbyPlayers: make([]*models.Actor, 0),
-		NearbyNpcs:    make([]*models.Actor, 0),
-		OutgoingQueue: make(chan interface{}, 255)},
+	return &Player{
+		Actor: models.NewActor(),
 	}
 }
 
-func (p *Player) AppendOutgoing() {
-	//p.Actor.OutgoingQueue <- &outgoing.send
-	p.Actor.OutgoingQueue <- &outgoing.SendPositionPacket{Position:&models.Position{}}
+func (p *Player) Tick() {
+	p.OutgoingQueue <- &outgoing.PlayerUpdatePacket{Actor: p.Actor}
 }

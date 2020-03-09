@@ -7,7 +7,6 @@ import (
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
 	rsNet "rsps-comm-test/internal/net"
-	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
 	"time"
 )
@@ -73,7 +72,8 @@ func main() {
 				}
 
 				for {
-					client.EnqueueOutgoing(&outgoing.PlayerUpdatePacket{})
+					client.Player.Tick()
+					//client.EnqueueOutgoing(outgoing.NewPlayerUpdatePacket(client.Player.Actor))
 					<- time.After(600 * time.Millisecond)
 				}
 			}()

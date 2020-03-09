@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
+	"rsps-comm-test/internal/game"
 	"rsps-comm-test/pkg/models"
 	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
@@ -155,18 +156,22 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	connection.Write([]byte{2, 13, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1})
 
-	client := NewClient(connection, encryptor, decryptor)
+	player := game.NewPlayer()
+	client := NewClient(connection, encryptor, decryptor, player)
+	player.OutgoingQueue = client.downstreamQueue
 
-	client.EnqueueOutgoing(&outgoing.RebuildLoginPacket{Position:&models.Position{
+	player.Actor.Movement.Position = &models.Position{
 		X:      3094,
 		Z:      3497,
-	}})
+	}
+
+	client.EnqueueOutgoing(&outgoing.RebuildLoginPacket{Position:player.Actor.Movement.Position})
 
 	client.EnqueueOutgoing(&outgoing.IfOpenTopPacket{}) // main screen interface?
 
 	client.EnqueueOutgoing(&outgoing.RebuildNormalPacket{Position:&models.Position{
-		X:      3094 >> 3,
-		Z:      3497 >> 3,
+		X:      player.Actor.Movement.Position.X >> 3,
+		Z:      player.Actor.Movement.Position.Z >> 3,
 	}})
 
 	return client

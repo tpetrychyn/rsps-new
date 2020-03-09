@@ -154,10 +154,6 @@ func (s *Stream) WriteDWord_v2(value int) {
 	s.currentOffset++
 }
 
-func (s *Stream) SkipByte() {
-	s.currentOffset++
-}
-
 func (s *Stream) WriteBits(numBits uint, value uint) {
 	if numBits == 0 {
 		return
@@ -181,10 +177,18 @@ func (s *Stream) WriteBits(numBits uint, value uint) {
 		s.buffer[bytePos] = byte(uint(s.buffer[bytePos]) | (value << (8 - s.bitPosition - numBits)))
 		s.bitPosition += numBits
 	}
-}
-
-func (s *Stream) CloseBitAccess() {
-	s.bitPosition = 0
 	s.currentOffset = uint(len(s.buffer))
 }
+
+func (s *Stream) SkipByte() {
+	s.bitPosition = 0
+	s.buffer = append(s.buffer, 0)
+	s.currentOffset = uint(len(s.buffer))
+}
+
+//func (s *Stream) CloseBitAccess() {
+//	s.bitPosition = 0
+//	s.buffer = append(s.buffer, 0)
+//	s.currentOffset = uint(len(s.buffer))
+//}
 

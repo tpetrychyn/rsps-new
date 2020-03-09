@@ -22,7 +22,6 @@ func (r *Region) AddPlayer(player *Actor) {
 	r.Players.Range(func(key, value interface{}) bool {
 		if p, ok := value.(*Actor); ok {
 			log.Printf("found %+v", p)
-			p.OutgoingQueue <- &Message{Body:"region enter"}
 		}
 		return true
 	})
