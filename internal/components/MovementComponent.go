@@ -9,28 +9,28 @@ import (
 type MovementComponent struct {
 	Direction models.DirectionEnum
 	Movement  *models.Movement
-	steps     []*models.Step
+	Steps     []*models.Step
 }
 
 func NewMovementComponent(movement *models.Movement) *MovementComponent {
 	return &MovementComponent{
 		Movement: movement,
-		steps:    make([]*models.Step, 0),
+		Steps:    make([]*models.Step, 0),
 	}
 }
 
 func (m *MovementComponent) Tick() {
-	if len(m.steps) == 0 {
+	if len(m.Steps) == 0 {
 		return
 	}
 
-	walkPoint := m.steps[0]
-	m.steps = m.steps[1:]
+	walkPoint := m.Steps[0]
+	m.Steps = m.Steps[1:]
 
 	var runPoint *models.Step
-	if m.Movement.IsRunning && len(m.steps) > 0 {
-		runPoint = m.steps[0]
-		m.steps = m.steps[1:]
+	if m.Movement.IsRunning && len(m.Steps) > 0 {
+		runPoint = m.Steps[0]
+		m.Steps = m.Steps[1:]
 	}
 
 	if walkPoint != nil  {
@@ -46,7 +46,12 @@ func (m *MovementComponent) Tick() {
 	}
 }
 
-func (m *MovementComponent) AddPosition(p *models.Position) {
+func (m *MovementComponent) MoveTo(p *models.Position) {
+	m.Steps = make([]*models.Step, 0)
+	m.addPosition(p)
+}
+
+func (m *MovementComponent) addPosition(p *models.Position) {
 	last := m.getLast()
 	x := int(p.X)
 	z := int(p.Z)
@@ -81,7 +86,7 @@ func (m *MovementComponent) addStep(x, z int) {
 	deltaY := z - int(last.Position.Z)
 	direction := models.DirectionFromDeltas(deltaX, deltaY)
 	if direction != models.Direction.None {
-		m.steps = append(m.steps, &models.Step{
+		m.Steps = append(m.Steps, &models.Step{
 			Position: &models.Position{
 				X: uint16(x),
 				Z: uint16(z),
@@ -93,11 +98,11 @@ func (m *MovementComponent) addStep(x, z int) {
 
 func (m *MovementComponent) getLast() *models.Step {
 	var last *models.Step
-	if len(m.steps) > 0 {
-		last = m.steps[len(m.steps)-1]
+	if len(m.Steps) > 0 {
+		last = m.Steps[len(m.Steps)-1]
 	} else {
 		last = &models.Step{
-			Position: m.Movement.LastPosition,
+			Position: m.Movement.Position,
 			Direction: models.Direction.None,
 		}
 	}
