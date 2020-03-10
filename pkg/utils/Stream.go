@@ -91,6 +91,15 @@ func (s *Stream) WriteWordLEA(value uint) {
 	s.currentOffset++
 }
 
+func (s *Stream) WriteByteS(value byte) {
+	if s.currentOffset > 0 {
+		s.buffer = append(s.buffer, 0)
+	}
+
+	s.buffer[s.currentOffset] = 128 - value
+	s.currentOffset++
+}
+
 func (s *Stream) WriteByte(value byte) {
 	if s.currentOffset > 0 {
 		s.buffer = append(s.buffer, 0)
@@ -154,6 +163,23 @@ func (s *Stream) WriteDWord_v2(value int) {
 	s.currentOffset++
 }
 
+func (s *Stream) WriteString(str string) {
+	if s.currentOffset > 0 {
+		s.buffer = append(s.buffer, 0)
+	}
+
+	for k, c := range str {
+		if k != 0 {
+			// append only after the first iter
+			s.buffer = append(s.buffer, 0)
+		}
+		s.buffer[s.currentOffset] = byte(c)
+		s.currentOffset++
+	}
+
+	s.SkipByte() // end with a trailing 0
+}
+
 func (s *Stream) WriteBits(numBits uint, value uint) {
 	if numBits == 0 {
 		return
@@ -185,10 +211,3 @@ func (s *Stream) SkipByte() {
 	s.buffer = append(s.buffer, 0)
 	s.currentOffset = uint(len(s.buffer))
 }
-
-//func (s *Stream) CloseBitAccess() {
-//	s.bitPosition = 0
-//	s.buffer = append(s.buffer, 0)
-//	s.currentOffset = uint(len(s.buffer))
-//}
-

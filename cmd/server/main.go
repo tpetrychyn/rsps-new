@@ -73,8 +73,9 @@ func main() {
 
 				for {
 					client.Player.Tick()
-					//client.EnqueueOutgoing(outgoing.NewPlayerUpdatePacket(client.Player.Actor))
 					<- time.After(600 * time.Millisecond)
+
+					client.Player.PostTick()
 				}
 			}()
 		}
