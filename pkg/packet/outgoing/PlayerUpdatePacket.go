@@ -10,12 +10,6 @@ type PlayerUpdatePacket struct {
 	Actor *models.Actor
 }
 
-func NewPlayerUpdatePacket(player *models.Actor) *PlayerUpdatePacket {
-	return &PlayerUpdatePacket{Actor: player}
-}
-
-var first = true
-
 // [ [player pos] | [player up masks] ]
 func (p *PlayerUpdatePacket) Build() []byte {
 	stream := utils.NewStream()
@@ -45,8 +39,6 @@ func (p *PlayerUpdatePacket) Build() []byte {
 		stream.WriteBits(2, uint(diffH&0x3))
 		stream.WriteBits(5, uint(diffX&0x1F))
 		stream.WriteBits(5, uint(diffZ&0x1F))
-
-		first = false
 	} else if p.Actor.Movement.IsRunning {
 		stream.WriteBits(1, 1)
 		stream.WriteBits(1, p.Actor.UpdateMask.UpdateRequired()) // update flag
