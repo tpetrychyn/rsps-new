@@ -13,13 +13,13 @@ const ChunksPerRegion = 13
 const MaxViewport = ChunkSize * ChunksPerRegion
 
 type RebuildNormalPacket struct {
-	Position *models.Position
+	Position *models.Tile
 }
 
 func (r *RebuildNormalPacket) Build() []byte {
 	rebuildNormalBuffer := utils.NewStream()
 
-	rebuildNormalBuffer.WriteWordLEA(uint(r.Position.Z))
+	rebuildNormalBuffer.WriteWordLEA(uint(r.Position.Y))
 	rebuildNormalBuffer.WriteWordA(uint(r.Position.X))
 
 	b := r.GetRegionXteas()
@@ -37,17 +37,17 @@ func (r *RebuildNormalPacket) Build() []byte {
 func (r *RebuildNormalPacket) GetRegionXteas() []byte {
 	lx := (r.Position.X - (MaxViewport >> 4)) >> 3
 	rx := (r.Position.X + (MaxViewport >> 4)) >> 3
-	lz := (r.Position.Z - (MaxViewport >> 4)) >> 3
-	rz := (r.Position.Z + (MaxViewport >> 4)) >> 3
+	lz := (r.Position.Y - (MaxViewport >> 4)) >> 3
+	rz := (r.Position.Y + (MaxViewport >> 4)) >> 3
 
 	buf := bytes.NewBuffer(make([]byte, 0, 2 + 4*10))
 
 	forceSend := false
-	if (r.Position.X / 8 == 48 || r.Position.X / 8 == 49) && r.Position.Z / 8 == 48 {
+	if (r.Position.X / 8 == 48 || r.Position.X / 8 == 49) && r.Position.Y/ 8 == 48 {
 		forceSend = true
 	}
 
-	if r.Position.X / 8 == 48 && r.Position.Z / 8 == 48 {
+	if r.Position.X / 8 == 48 && r.Position.Y/ 8 == 48 {
 		forceSend = true
 	}
 

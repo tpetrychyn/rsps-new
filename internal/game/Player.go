@@ -1,7 +1,7 @@
 package game
 
 import (
-	"rsps-comm-test/internal/components"
+	"github.com/google/uuid"
 	"rsps-comm-test/pkg/models"
 	"rsps-comm-test/pkg/packet"
 	"rsps-comm-test/pkg/packet/outgoing"
@@ -9,8 +9,9 @@ import (
 
 type Player struct {
 	*models.Actor
-	MovementComponent *components.MovementComponent
-	OutgoingQueue     chan packet.DownstreamMessage
+	Id uuid.UUID
+	//MovementComponent *systems.MovementSystem
+	OutgoingQueue chan packet.DownstreamMessage
 }
 
 func NewPlayer() *Player {
@@ -19,12 +20,12 @@ func NewPlayer() *Player {
 	actor.UpdateMask.Appearance = true
 	return &Player{
 		Actor: actor,
-		MovementComponent: components.NewMovementComponent(actor.Movement),
+		//MovementComponent: systems.NewMovementSystem(actor.Movement),
 	}
 }
 
 func (p *Player) Tick() {
-	p.MovementComponent.Tick()
+	//p.MovementComponent.Tick()
 
 	p.OutgoingQueue <- &outgoing.PlayerUpdatePacket{Actor: p.Actor}
 }

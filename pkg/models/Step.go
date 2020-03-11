@@ -1,6 +1,6 @@
 package models
 
 type Step struct {
-	*Position
+	*Tile
 	Direction DirectionEnum
 }

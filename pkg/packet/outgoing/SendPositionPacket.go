@@ -5,7 +5,7 @@ import (
 )
 
 type SendPositionPacket struct {
-	Position *models.Position
+	Position *models.Tile
 }
 
 

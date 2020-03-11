@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"rsps-comm-test/internal/game"
+	"rsps-comm-test/internal/systems"
 	"rsps-comm-test/pkg/packet"
 	"rsps-comm-test/pkg/packet/incoming"
 )
@@ -15,21 +16,23 @@ import (
 type Client struct {
 	connection      net.Conn
 	upstreamQueue   chan packet.UpstreamMessage
-	downstreamQueue chan packet.DownstreamMessage
+	DownstreamQueue chan packet.DownstreamMessage
 	encryptor       *isaac.ISAAC
 	decryptor       *isaac.ISAAC
 
-	Player *game.Player
+	Player     *game.Player
+	systemList []systems.System
 }
 
-func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, player *game.Player) *Client {
+func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, player *game.Player, systemList []systems.System) *Client {
 	client := &Client{
 		connection:      conn,
 		upstreamQueue:   make(chan packet.UpstreamMessage, 64),
-		downstreamQueue: make(chan packet.DownstreamMessage, 256),
+		DownstreamQueue: make(chan packet.DownstreamMessage, 256),
 		encryptor:       encryptor,
 		decryptor:       decryptor,
 		Player:          player,
+		systemList:      systemList,
 	}
 
 	go client.downstreamListener()
@@ -38,12 +41,12 @@ func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, pl
 }
 
 func (c *Client) EnqueueOutgoing(message packet.DownstreamMessage) {
-	c.downstreamQueue <- message
+	c.DownstreamQueue <- message
 }
 
 func (c *Client) downstreamListener() {
 	for {
-		message := <-c.downstreamQueue
+		message := <-c.DownstreamQueue
 		byteArray := message.Build()
 		byteArray[0] = byte(uint32(byteArray[0]) + (c.encryptor.Rand() & 0xFF))
 
@@ -89,11 +92,11 @@ func (c *Client) upstreamListener() {
 			Size:    length,
 			Payload: payload,
 			Buffer:  bytes.NewBuffer(payload),
-		})
+		}, c.systemList)
 	}
 }
 
 func (c *Client) Close() {
 	close(c.upstreamQueue)
-	close(c.downstreamQueue)
+	close(c.DownstreamQueue)
 }

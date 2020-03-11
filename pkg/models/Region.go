@@ -1,28 +1,15 @@
 package models
 
-import (
-	"log"
-	"sync"
-)
-
 type Region struct {
-	Players *sync.Map
-	Npcs    *sync.Map
+	Id           int
+	BlockedTiles map[string]bool
+	BridgeTiles  map[string]bool
 }
 
-func NewRegion() *Region {
-	return &Region{
-		Players: &sync.Map{},
-		Npcs:    &sync.Map{},
-	}
+func CoordsToRegionId(x, y int) int {
+	return (x>>6)<<8 | y>>6
 }
 
-func (r *Region) AddPlayer(player *Actor) {
-	r.Players.Store(player.Id, player)
-	r.Players.Range(func(key, value interface{}) bool {
-		if p, ok := value.(*Actor); ok {
-			log.Printf("found %+v", p)
-		}
-		return true
-	})
+func (r *Region) GetBase() (int, int) {
+	return ((r.Id >> 8) & 0xFF) << 6, (r.Id & 0xFF) << 6
 }

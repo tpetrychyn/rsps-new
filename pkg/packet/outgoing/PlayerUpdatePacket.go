@@ -28,7 +28,7 @@ func (p *PlayerUpdatePacket) Build() []byte {
 			p.Actor.Movement.LastPosition = p.Actor.Movement.Position
 		}
 		diffX := p.Actor.Movement.Position.X - p.Actor.Movement.LastPosition.X
-		diffZ := p.Actor.Movement.Position.Z - p.Actor.Movement.LastPosition.Z
+		diffZ := p.Actor.Movement.Position.Y - p.Actor.Movement.LastPosition.Y
 		diffH := p.Actor.Movement.Position.Height - p.Actor.Movement.LastPosition.Height
 
 		stream.WriteBits(1, 1)
