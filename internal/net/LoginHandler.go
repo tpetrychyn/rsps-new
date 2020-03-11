@@ -11,9 +11,6 @@ import (
 	"math/rand"
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
-	"rsps-comm-test/internal/game"
-	"rsps-comm-test/pkg/models"
-	"rsps-comm-test/pkg/packet/outgoing"
 	"rsps-comm-test/pkg/utils"
 	"unsafe"
 )
@@ -22,7 +19,7 @@ type LoginHandler struct {
 	CacheStore *cachestore.Store
 }
 
-func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) *Client {
+func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) (*isaac.ISAAC, *isaac.ISAAC) {
 	connection.Write([]byte{0}) // proceed
 	serverSeed := rand.Uint64()
 	binary.Write(connection, binary.BigEndian, serverSeed)
@@ -48,7 +45,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 	binary.Read(rsaBuffer, binary.BigEndian, &successfulDecrypt)
 	if successfulDecrypt != 1 {
 		connection.Write([]byte{10}) // bad session id
-		return nil
+		return nil, nil
 	}
 
 	xteaKeys := make([]int32, 4)
@@ -59,14 +56,14 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	if serverSeed != reportedSeed {
 		connection.Write([]byte{10})
-		return nil
+		return nil, nil
 	}
 
 	var authType byte
 	binary.Read(rsaBuffer, binary.BigEndian, &authType)
 	if authType != 0 {
 		connection.Write([]byte{10})
-		return nil
+		return nil, nil
 	}
 
 	var skip = make([]byte, 5) // authcode 2, unkown 1, another skip
@@ -88,7 +85,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 	xteaCipher, err := xtea.NewCipher(xteaKey)
 	if err != nil {
 		connection.Write([]byte{10})
-		return nil
+		return nil, nil
 	}
 
 	xteaEncryptedBytes := make([]byte, reader.Buffered())
@@ -156,25 +153,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	connection.Write([]byte{2, 13, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1})
 
-	player := game.NewPlayer()
-	client := NewClient(connection, encryptor, decryptor, player)
-	player.OutgoingQueue = client.downstreamQueue
-
-	player.Actor.Movement.Position = &models.Position{
-		X:      3094,
-		Z:      3497,
-	}
-
-	client.EnqueueOutgoing(&outgoing.RebuildLoginPacket{Position:player.Actor.Movement.Position})
-
-	client.EnqueueOutgoing(&outgoing.IfOpenTopPacket{}) // main screen interface?
-
-	client.EnqueueOutgoing(&outgoing.RebuildNormalPacket{Position:&models.Position{
-		X:      player.Actor.Movement.Position.X >> 3,
-		Z:      player.Actor.Movement.Position.Z >> 3,
-	}})
-
-	return client
+	return encryptor, decryptor
 }
 
 type LoginRequest struct {
