@@ -5,12 +5,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/gtank/isaac"
-	"golang.org/x/crypto/xtea"
 	"log"
 	"math/big"
 	"math/rand"
 	"net"
 	"osrs-cache-parser/pkg/cachestore"
+	utils2 "osrs-cache-parser/pkg/utils"
 	"rsps-comm-test/pkg/utils"
 	"unsafe"
 )
@@ -73,16 +73,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 
 	log.Printf("password: %+v", password)
 
-	xteaKey := make([]byte, 16)
-	for i := 0; i < len(xteaKeys); i++ {
-		j := i << 2
-		xteaKey[j] = byte(xteaKeys[i] >> 24)
-		xteaKey[j+1] = byte(xteaKeys[i] >> 16)
-		xteaKey[j+2] = byte(xteaKeys[i] >> 8)
-		xteaKey[j+3] = byte(xteaKeys[i])
-	}
-
-	xteaCipher, err := xtea.NewCipher(xteaKey)
+	xteaCipher, err := utils2.XteaKeyFromIntArray(xteaKeys)
 	if err != nil {
 		connection.Write([]byte{10})
 		return nil, nil
@@ -91,7 +82,7 @@ func (l *LoginHandler) HandleRequest(connection net.Conn, reader *bufio.Reader) 
 	xteaEncryptedBytes := make([]byte, reader.Buffered())
 	binary.Read(reader, binary.BigEndian, &xteaEncryptedBytes)
 
-	xteaBytes := utils.XteaDecrypt(xteaCipher, xteaEncryptedBytes)
+	xteaBytes := utils2.XteaDecrypt(xteaCipher, xteaEncryptedBytes)
 	xteaBuffer := bytes.NewBuffer(xteaBytes)
 
 	username := utils.ReadString(xteaBuffer)

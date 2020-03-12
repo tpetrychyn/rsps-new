@@ -1,7 +1,8 @@
-package game
+package entities
 
 import (
-	"rsps-comm-test/internal/components"
+	"rsps-comm-test/internal/game"
+	"rsps-comm-test/internal/game/components"
 	"rsps-comm-test/pkg/models"
 	"rsps-comm-test/pkg/packet"
 	"rsps-comm-test/pkg/packet/outgoing"
@@ -9,17 +10,19 @@ import (
 
 type Player struct {
 	*models.Actor
+	World             *game.World
 	MovementComponent *components.MovementComponent
 	OutgoingQueue     chan packet.DownstreamMessage
 }
 
-func NewPlayer() *Player {
+func NewPlayer(world *game.World) *Player {
 	actor := models.NewActor()
 	actor.UpdateMask.NeedsPlacement = true
 	actor.UpdateMask.Appearance = true
 	return &Player{
-		Actor: actor,
-		MovementComponent: components.NewMovementComponent(actor.Movement),
+		Actor:             actor,
+		World:             world,
+		MovementComponent: components.NewMovementComponent(actor.Movement, world),
 	}
 }
 

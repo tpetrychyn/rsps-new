@@ -6,7 +6,7 @@ import (
 )
 
 type RebuildLoginPacket struct {
-	Position *models.Position
+	Position *models.Tile
 }
 
 func (r *RebuildLoginPacket) Build() []byte {
@@ -19,10 +19,10 @@ func (r *RebuildLoginPacket) Build() []byte {
 		}
 	}
 
-	rebuildLoginBuffer.WriteWordLEA(uint(r.Position.Z >> 3))
+	rebuildLoginBuffer.WriteWordLEA(uint(r.Position.Y >> 3))
 	rebuildLoginBuffer.WriteWordA(uint(r.Position.X >> 3))
 
-	normalXteas := (&RebuildNormalPacket{Position: &models.Position{X: r.Position.X >> 3, Z: r.Position.Z >> 3}}).GetRegionXteas()
+	normalXteas := (&RebuildNormalPacket{Position: &models.Tile{X: r.Position.X >> 3, Y: r.Position.Y >> 3}}).GetRegionXteas()
 	rebuildLoginBuffer.Write(normalXteas)
 
 	by := rebuildLoginBuffer.Flush()

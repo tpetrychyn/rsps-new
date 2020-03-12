@@ -1,15 +1,15 @@
 package models
 
 type Movement struct {
-	Direction    DirectionEnum
-	Position     *Position
-	LastPosition *Position
+	Direction    DirectionType
+	Position     *Tile
+	LastPosition *Tile
 	IsRunning    bool
 }
 
 func NewMovement() *Movement {
 	return &Movement{
-		Position:     new(Position),
+		Position:     new(Tile),
 		LastPosition: nil,
 		Direction:    Direction.None,
 	}

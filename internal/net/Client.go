@@ -5,9 +5,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/gtank/isaac"
-	"log"
 	"net"
-	"rsps-comm-test/internal/game"
+	"rsps-comm-test/internal/game/entities"
 	"rsps-comm-test/pkg/packet"
 	"rsps-comm-test/pkg/packet/incoming"
 )
@@ -19,10 +18,10 @@ type Client struct {
 	encryptor       *isaac.ISAAC
 	decryptor       *isaac.ISAAC
 
-	Player *game.Player
+	Player *entities.Player
 }
 
-func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, player *game.Player) *Client {
+func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, player *entities.Player) *Client {
 	client := &Client{
 		connection:      conn,
 		upstreamQueue:   make(chan packet.UpstreamMessage, 64),
@@ -52,10 +51,11 @@ func (c *Client) upstreamListener() {
 	for {
 		by, err := reader.ReadByte()
 		if err != nil {
-			panic(err)
+			c.Close()
+			return
 		}
 		opcode := byte(uint32(by) - (c.decryptor.Rand() & 0xFF))
-		log.Printf("opcode %+v", opcode)
+		//log.Printf("opcode %+v", opcode)
 
 		// map opcode to packet def'n
 		packetDef := incoming.Packets[opcode]
