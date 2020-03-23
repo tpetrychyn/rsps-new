@@ -1,23 +1,24 @@
 package components
 
 import (
+	"github.com/tpetrychyn/rsps-comm-test/internal/game"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/models"
 	"log"
-	"rsps-comm-test/internal/game"
-	"rsps-comm-test/pkg/models"
-	"rsps/util"
 )
 
 type MovementComponent struct {
-	movement *models.Movement
-	world    *game.World
-	steps    []*models.Step
+	movement        *models.Movement
+	world           *game.World
+	steps           []*models.Step
+	addMovementFlag func()
 }
 
-func NewMovementComponent(movement *models.Movement, world *game.World) *MovementComponent {
+func NewMovementComponent(movement *models.Movement, world *game.World, addMovementFlag func()) *MovementComponent {
 	return &MovementComponent{
-		movement: movement,
-		world:    world,
-		steps:    make([]*models.Step, 0),
+		movement:        movement,
+		world:           world,
+		steps:           make([]*models.Step, 0),
+		addMovementFlag: addMovementFlag,
 	}
 }
 
@@ -32,88 +33,102 @@ func (m *MovementComponent) Tick() {
 	var runPoint *models.Step
 	if m.movement.IsRunning && len(m.steps) > 0 {
 		runPoint = m.steps[0]
+		if m.IsBlocked(walkPoint, runPoint) || m.IsBlocked(runPoint, walkPoint) {
+			log.Printf("tried to run on blocked step")
+		}
 		m.steps = m.steps[1:]
 	}
 
 	if walkPoint != nil {
 		m.movement.Position = walkPoint.Tile
-		m.movement.Direction = walkPoint.Direction
-		log.Printf("wdir %+v", walkPoint.Direction)
+		m.movement.WalkDirection = walkPoint.Direction
 	}
 
 	if runPoint != nil {
 		m.movement.Position = runPoint.Tile
-		m.movement.Direction = runPoint.Direction
-		log.Printf("rdir %+v", runPoint.Direction)
+		m.movement.RunDirection = runPoint.Direction
+		m.addMovementFlag()
 	}
 }
 
 func (m *MovementComponent) MoveTo(p *models.Tile) {
 	m.steps = make([]*models.Step, 0)
-	m.addPosition(p)
+	m.calculateRoute(p)
 }
 
-func (m *MovementComponent) addPosition(p *models.Tile) {
-	last := m.getLast()
-	x := int(p.X)
-	y := int(p.Y)
+func (m *MovementComponent) calculateRoute(p *models.Tile) {
+	nodes := make([]*models.Step, 0)
+	visited := make([]*models.Step, 0)
 
-	deltaX := x - int(last.Tile.X)
-	deltaY := y - int(last.Tile.Y)
+	start := m.getLast()
+	nodes = append(nodes, start)
 
-	max := util.Abs(deltaX)
-	if util.Abs(deltaY) > util.Abs(deltaX) {
-		max = util.Abs(deltaY)
-	}
-
-	for i := 0; i < max; i++ {
-		if deltaX < 0 {
-			deltaX++
-		} else if deltaX > 0 {
-			deltaX--
-		}
-		if deltaY < 0 {
-			deltaY++
-		} else if deltaY > 0 {
-			deltaY--
-		}
-
-		m.addStep(x-deltaX, y-deltaY)
-	}
-}
-
-func (m *MovementComponent) addStep(x, y int) {
-	last := m.getLast()
-	deltaX := x - int(last.Tile.X)
-	deltaY := y - int(last.Tile.Y)
-	direction := models.DirectionFromDeltas(deltaX, deltaY)
-	if direction != models.Direction.None {
-
-		// NOTE: Collision works based on our current tile + direction,
-		chunk := m.world.GetOrLoadChunk(&models.Tile{X: last.Tile.X, Y: last.Tile.Y})
-		// TODO: height instead of 0
-		if chunk.CollisionMatrix[0].IsBlocked(int(last.Tile.X), int(last.Tile.Y), direction) {
+	for {
+		if len(nodes) == 0 {
 			return
 		}
+		head := nodes[0]
+		nodes = nodes[1:]
 
-		if direction.IsDiagonal() {
-			for _, d := range direction.GetDiagonalComponents() {
-				stepX, stepY := int(last.Tile.X) + d.GetDeltaX(), int(last.Tile.Y) + d.GetDeltaY()
-				chunk := m.world.GetOrLoadChunk(&models.Tile{X: uint16(stepX), Y: uint16(stepY)})
-				if chunk.CollisionMatrix[0].IsBlocked(stepX, stepY, d.GetOpposite()) {
-					return
+		for _, dir := range models.RsDirectionOrder {
+			tile := &models.Step{Tile: head.Step(dir), Direction: dir, Head: head, Cost: head.Cost + 1}
+			if !start.IsWithinRadius(tile.Tile, 20) {
+				continue
+			}
+			if containsTile(visited, tile) {
+				continue
+			}
+
+			if m.IsBlocked(head, tile) || m.IsBlocked(tile, head) {
+				continue
+			}
+			nodes = append(nodes, tile)
+			visited = append(visited, tile)
+			if tile.X == p.X && tile.Y == p.Y {
+				for {
+					if tile.X == start.X && tile.Y == start.Y {
+						return
+					}
+					deltaX := int(tile.X) - int(tile.Head.X)
+					deltaY := int(tile.Y) - int(tile.Head.Y)
+					direction := models.DirectionFromDeltas(deltaX, deltaY)
+					tile.Direction = direction
+					m.steps = append([]*models.Step{tile}, m.steps...)
+					tile = tile.Head
 				}
 			}
 		}
-
-		m.steps = append(m.steps, &models.Step{
-			Tile: &models.Tile{
-				X: uint16(x),
-				Y: uint16(y),
-			},
-			Direction: direction,
-		})
 	}
+}
+
+func containsTile(arr []*models.Step, tile *models.Step) bool {
+	for _, v := range arr {
+		if v.X == tile.X && v.Y == tile.Y {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *MovementComponent) IsBlocked(from, dest *models.Step) bool {
+	deltaX := int(dest.X) - int(from.X)
+	deltaY := int(dest.Y) - int(from.Y)
+	direction := models.DirectionFromDeltas(deltaX, deltaY)
+	chunk := m.world.GetOrLoadChunk(from.Tile)
+	if chunk.CollisionMatrix[0].IsBlocked(int(from.X), int(from.Y), direction) {
+		return true
+	}
+
+	if direction.IsDiagonal() {
+		for _, d := range direction.GetDiagonalComponents() {
+			step := from.Step(d)
+			chunk := m.world.GetOrLoadChunk(step)
+			if chunk.CollisionMatrix[0].IsBlocked(int(step.X), int(step.Y), d.GetOpposite()) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (m *MovementComponent) getLast() *models.Step {

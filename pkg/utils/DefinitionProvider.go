@@ -1,6 +1,6 @@
 package utils
 
-import "osrs-cache-parser/pkg/models"
+import "github.com/tpetrychyn/osrs-cache-parser/pkg/models"
 
 type DefinitionContainer struct {
 	Objects []*models.ObjectDef

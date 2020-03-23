@@ -2,7 +2,7 @@ package outgoing
 
 import (
 	"bufio"
-	"rsps/model"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 )
 
 type SendMessagePacket struct {
@@ -10,7 +10,7 @@ type SendMessagePacket struct {
 }
 
 func (s *SendMessagePacket) Write(writer *bufio.Writer) {
-	buffer := model.NewStream()
+	buffer := utils.NewStream()
 	buffer.Write([]byte(s.Message))
 	buffer.WriteByte(10)
 

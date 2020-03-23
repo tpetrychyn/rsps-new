@@ -1,8 +1,8 @@
 package outgoing
 
 import (
-	"rsps-comm-test/pkg/models"
-	"rsps-comm-test/pkg/utils"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/models"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 )
 
 type PlayerAppearance struct {

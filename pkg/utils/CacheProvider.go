@@ -1,6 +1,6 @@
 package utils
 
-import "osrs-cache-parser/pkg/cachestore"
+import "github.com/tpetrychyn/osrs-cache-parser/pkg/cachestore"
 
 var cache = cachestore.NewStore("./cache")
 

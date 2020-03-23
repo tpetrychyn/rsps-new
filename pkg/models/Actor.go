@@ -18,3 +18,9 @@ func NewActor() *Actor {
 		Equipment:     NewItemContainer(14),
 	}
 }
+
+func (a *Actor) Teleport(tile *Tile) {
+	a.Movement.Position = tile
+	a.UpdateMask.Movement = true
+	a.Movement.Teleported = true
+}

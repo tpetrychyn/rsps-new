@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"github.com/gtank/isaac"
+	"github.com/tpetrychyn/isaac"
+	"github.com/tpetrychyn/rsps-comm-test/internal/game/entities"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/packet"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/packet/incoming"
 	"net"
-	"rsps-comm-test/internal/game/entities"
-	"rsps-comm-test/pkg/packet"
-	"rsps-comm-test/pkg/packet/incoming"
 )
 
 type Client struct {
@@ -39,6 +39,10 @@ func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, pl
 func (c *Client) downstreamListener() {
 	for {
 		message := <-c.DownstreamQueue
+		if message == nil {
+			close(c.DownstreamQueue)
+			return
+		}
 		byteArray := message.Build()
 		byteArray[0] = byte(uint32(byteArray[0]) + (c.encryptor.Rand() & 0xFF))
 
@@ -51,7 +55,7 @@ func (c *Client) upstreamListener() {
 	for {
 		by, err := reader.ReadByte()
 		if err != nil {
-			c.Close()
+			close(c.upstreamQueue)
 			return
 		}
 		opcode := byte(uint32(by) - (c.decryptor.Rand() & 0xFF))

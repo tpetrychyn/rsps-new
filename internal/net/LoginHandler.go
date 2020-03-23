@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"github.com/gtank/isaac"
+	"github.com/tpetrychyn/isaac"
+	"github.com/tpetrychyn/osrs-cache-parser/pkg/cachestore"
+	utils2 "github.com/tpetrychyn/osrs-cache-parser/pkg/utils"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 	"log"
 	"math/big"
 	"math/rand"
 	"net"
-	"osrs-cache-parser/pkg/cachestore"
-	utils2 "osrs-cache-parser/pkg/utils"
-	"rsps-comm-test/pkg/utils"
 	"unsafe"
 )
 

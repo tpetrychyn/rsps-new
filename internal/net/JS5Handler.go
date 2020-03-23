@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
-	"osrs-cache-parser/pkg/cachestore"
+	"github.com/tpetrychyn/osrs-cache-parser/pkg/cachestore"
 )
 
 type JS5Handler struct {
@@ -64,8 +64,8 @@ func (j *JS5Handler) HandleRequest(connection net.Conn, reader *bufio.Reader) bo
 			connection.Write(outBuffer.Bytes())
 		} else {
 			i := j.CacheStore.FindIndex(int(index))
-			a := i.Archives[archive]
-			data := j.CacheStore.LoadArchive(a)
+			a := i.Groups[archive]
+			data := j.CacheStore.LoadGroup(a)
 
 			if a == nil || data == nil {
 				log.Printf("nil data index %d", index)

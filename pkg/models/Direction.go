@@ -1,6 +1,7 @@
 package models
 
 type DirectionType struct {
+	Name             string
 	OrientationValue int
 	PlayerValue      int
 	NpcValue         int
@@ -20,46 +21,55 @@ type dir struct {
 
 var Direction = &dir{
 	None: DirectionType{
+		Name: "none",
 		OrientationValue: -1,
 		PlayerValue:      -1,
 		NpcValue:         -1,
 	},
 	NorthWest: DirectionType{
+		Name: "North West",
 		OrientationValue: 0,
 		PlayerValue:      5,
 		NpcValue:         0,
 	},
 	North: DirectionType{
+		Name: "North",
 		OrientationValue: 1,
 		PlayerValue:      6,
 		NpcValue:         1,
 	},
 	NorthEast: DirectionType{
+		Name: "North East",
 		OrientationValue: 2,
 		PlayerValue:      7,
 		NpcValue:         2,
 	},
 	West: DirectionType{
+		Name: "West",
 		OrientationValue: 3,
 		PlayerValue:      3,
 		NpcValue:         3,
 	},
 	East: DirectionType{
+		Name: "East",
 		OrientationValue: 4,
 		PlayerValue:      4,
 		NpcValue:         4,
 	},
 	SouthWest: DirectionType{
+		Name: "South West",
 		OrientationValue: 5,
 		PlayerValue:      0,
 		NpcValue:         5,
 	},
 	South: DirectionType{
+		Name: "South",
 		OrientationValue: 6,
 		PlayerValue:      1,
 		NpcValue:         6,
 	},
 	SouthEast: DirectionType{
+		Name: "South East",
 		OrientationValue: 7,
 		PlayerValue:      2,
 		NpcValue:         7,
@@ -158,3 +168,5 @@ func (d *DirectionType) GetOpposite() DirectionType {
 	}
 	return Direction.None
 }
+
+var RsDirectionOrder = []DirectionType{Direction.West, Direction.East, Direction.North, Direction.South, Direction.SouthWest, Direction.SouthEast, Direction.NorthWest, Direction.NorthEast}

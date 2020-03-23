@@ -3,8 +3,8 @@ package outgoing
 import (
 	"bytes"
 	"encoding/binary"
-	"rsps-comm-test/pkg/models"
-	"rsps-comm-test/pkg/utils"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/models"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 )
 
 const ChunkSize = 8

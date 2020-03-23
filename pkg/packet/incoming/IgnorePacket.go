@@ -1,8 +1,8 @@
 package incoming
 
 import (
-	"rsps-comm-test/internal/game/entities"
-	"rsps-comm-test/pkg/packet"
+	"github.com/tpetrychyn/rsps-comm-test/internal/game/entities"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/packet"
 )
 
 type IgnorePacket struct {}
