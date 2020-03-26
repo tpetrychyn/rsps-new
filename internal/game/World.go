@@ -32,12 +32,35 @@ func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
 	landArchive := archives.NewLandLoader(utils.GetCache())
 	objArray := landArchive.LoadObjects(regionId, utils.GlobalXteaDefs[uint16(regionId)])
 
+	mapArchive := archives.NewMapLoader(utils.GetCache())
+	blocked, bridges := mapArchive.LoadBlockedTiles(regionId)
+	for _, v := range blocked {
+		if !chunk.Contains(&models.Tile{X: uint16(v.X), Y: uint16(v.Y)}) {
+			continue
+		}
+		w.PutTile(&models.Tile{X: uint16(v.X), Y: uint16(v.Y)}, models.NESW...)
+	}
+
+objectCollisionLoop:
 	for _, obj := range objArray {
 		if !chunk.Contains(&models.Tile{X: uint16(obj.WorldX), Y: uint16(obj.WorldY)}) {
 			continue
 		}
 
 		def := utils.GetDefinitions().Objects[obj.Id]
+		if !unWalkable(def, int(obj.Type)) {
+			continue
+		}
+
+		height := obj.Height
+		for _, v := range bridges {
+			if v.X == obj.WorldX && v.Y == obj.WorldY {
+				if v.Height == obj.Height+1 {
+					continue objectCollisionLoop
+				}
+				height--
+			}
+		}
 
 		width, length := def.Width, def.Length
 		if obj.Orientation == 1 || obj.Orientation == 3 {
@@ -45,14 +68,10 @@ func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
 			length = def.Width
 		}
 
-		if !unWalkable(def, int(obj.Type)) {
-			continue
-		}
-
 		tile := &models.Tile{
 			X:      uint16(obj.WorldX),
 			Y:      uint16(obj.WorldY),
-			Height: uint16(obj.Height),
+			Height: uint16(height),
 		}
 		if int(obj.Type) == collision.ObjectTypes.FloorDecoration {
 			if def.Interactive && def.Solid {
@@ -64,7 +83,7 @@ func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
 					tile := &models.Tile{
 						X:      uint16(obj.WorldX+dx),
 						Y:      uint16(obj.WorldY+dy),
-						Height: uint16(obj.Height),
+						Height: uint16(height),
 					}
 					w.PutTile(tile, models.NESW...)
 				}
@@ -75,14 +94,6 @@ func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
 			w.PutWall(tile, models.WNES_DIAGONAL[int(obj.Orientation)])
 		} else if int(obj.Type) == collision.ObjectTypes.WallCorner {
 			w.PutLargeCornerWall(tile, models.WNES_DIAGONAL[int(obj.Orientation)])
-		}
-	}
-
-	mapArchive := archives.NewMapLoader(utils.GetCache())
-	blocked, _ := mapArchive.LoadBlockedTiles(regionId)
-	for _, v := range blocked {
-		if !chunk.Contains(&models.Tile{X: uint16(v.X), Y: uint16(v.Y)}) {
-			continue
 		}
 	}
 

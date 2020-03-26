@@ -13,9 +13,7 @@ type Movement struct {
 func NewMovement() *Movement {
 	return &Movement{
 		Position:            new(Tile),
-		LastPosition:        nil,
 		WalkDirection:       Direction.None,
 		RunDirection:        Direction.None,
-		LastKnownRegionBase: nil,
 	}
 }

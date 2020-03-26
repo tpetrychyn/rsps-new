@@ -19,7 +19,7 @@ func NewActor() *Actor {
 	}
 }
 
-func (a *Actor) Teleport(tile *Tile) {
+func (a *Actor) MoveTo(tile *Tile) {
 	a.Movement.Position = tile
 	a.UpdateMask.Movement = true
 	a.Movement.Teleported = true

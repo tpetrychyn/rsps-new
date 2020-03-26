@@ -80,6 +80,7 @@ func main() {
 		if requestType == 15 {
 			var gameVersion int32
 			binary.Read(reader, binary.BigEndian, &gameVersion)
+			log.Printf("gameversion %+v", gameVersion)
 			if gameVersion != revision {
 				connection.Write([]byte{6}) // out of date
 				continue
@@ -105,9 +106,10 @@ func main() {
 			client := rsNet.NewClient(connection, encryptor, decryptor, player)
 			player.OutgoingQueue = client.DownstreamQueue
 
-			player.Actor.Teleport(&models.Tile{X: 3221, Y: 3222})
+			player.Teleport(&models.Tile{X: 3200, Y: 3400})
+			player.Actor.Movement.LastPosition = player.Movement.Position
 
-			client.DownstreamQueue <- &outgoing.RebuildLoginPacket{Position: player.Actor.Movement.Position}
+			client.DownstreamQueue <- &outgoing.RebuildLoginPacket{Position: player.Movement.Position}
 
 			client.DownstreamQueue <- &outgoing.IfOpenTopPacket{} // main screen interface?
 

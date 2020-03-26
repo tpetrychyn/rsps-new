@@ -20,12 +20,30 @@ func NewPlayer(world *game.World) *Player {
 	actor.UpdateMask.Appearance = true
 
 	player := &Player{
-		Actor:             actor,
-		World:             world,
+		Actor: actor,
+		World: world,
 	}
-	player.MovementComponent = components.NewMovementComponent(actor.Movement, world, player.UpdateMask.AddMovementFlag)
-
+	player.MovementComponent = components.NewMovementComponent(actor.Movement, world, player.UpdateMask.AddMovementFlag, player.SetMapFlag)
 	return player
+}
+
+func (p *Player) SetMapFlag(tile *models.Tile) {
+	p.OutgoingQueue <- &outgoing.MapFlagPacket{
+		LastKnownRegionBase: p.Movement.LastKnownRegionBase,
+		Tile:                tile,
+	}
+}
+
+func (p *Player) SpawnObject() {
+	local := p.Movement.LastKnownRegionBase.ToLocal(p.Movement.Position)
+	p.OutgoingQueue <- &outgoing.UpdateZonePartialFollowsPacket{Tile: local}
+
+	p.OutgoingQueue <- &outgoing.LocAddChangePacket{Tile: p.Movement.Position, Id: 10, Type: 10}
+}
+
+func (p *Player) Teleport(tile *models.Tile) {
+	p.MoveTo(tile)
+	p.MovementComponent.Clear()
 }
 
 func (p *Player) Pretick() {
@@ -50,6 +68,7 @@ func (p *Player) PostTick() {
 	p.Movement.WalkDirection = models.Direction.None
 	p.Movement.RunDirection = models.Direction.None
 	p.Movement.Teleported = false
+	p.Movement.LastPosition = p.Movement.Position
 }
 
 const NormalViewDistance = 15

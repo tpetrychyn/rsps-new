@@ -11,15 +11,21 @@ type MovementComponent struct {
 	world           *game.World
 	steps           []*models.Step
 	addMovementFlag func()
+	setMapFlag      func(*models.Tile)
 }
 
-func NewMovementComponent(movement *models.Movement, world *game.World, addMovementFlag func()) *MovementComponent {
+func NewMovementComponent(movement *models.Movement, world *game.World, addMovementFlag func(), setMapFlag func(*models.Tile)) *MovementComponent {
 	return &MovementComponent{
 		movement:        movement,
 		world:           world,
 		steps:           make([]*models.Step, 0),
 		addMovementFlag: addMovementFlag,
+		setMapFlag:      setMapFlag,
 	}
+}
+
+func (m *MovementComponent) Clear() {
+	m.steps = make([]*models.Step, 0)
 }
 
 func (m *MovementComponent) Tick() {
@@ -56,16 +62,19 @@ func (m *MovementComponent) MoveTo(p *models.Tile) {
 	m.calculateRoute(p)
 }
 
-func (m *MovementComponent) calculateRoute(p *models.Tile) {
+func (m *MovementComponent) calculateRoute(dest *models.Tile) {
 	nodes := make([]*models.Step, 0)
 	visited := make([]*models.Step, 0)
 
 	start := m.getLast()
-	nodes = append(nodes, start)
+	if start.X == dest.X && start.Y == dest.Y {
+		return
+	}
 
+	nodes = append(nodes, start)
 	for {
 		if len(nodes) == 0 {
-			return
+			break
 		}
 		head := nodes[0]
 		nodes = nodes[1:]
@@ -84,7 +93,8 @@ func (m *MovementComponent) calculateRoute(p *models.Tile) {
 			}
 			nodes = append(nodes, tile)
 			visited = append(visited, tile)
-			if tile.X == p.X && tile.Y == p.Y {
+			if tile.X == dest.X && tile.Y == dest.Y {
+				m.setMapFlag(dest)
 				for {
 					if tile.X == start.X && tile.Y == start.Y {
 						return
@@ -99,6 +109,14 @@ func (m *MovementComponent) calculateRoute(p *models.Tile) {
 			}
 		}
 	}
+	// couldnt make it to tile, see if we can get closer
+	min := start
+	for _, v := range visited {
+		if v.Tile.DistanceTo(dest) < min.Tile.DistanceTo(dest) {
+			min = v
+		}
+	}
+	m.calculateRoute(min.Tile)
 }
 
 func containsTile(arr []*models.Step, tile *models.Step) bool {

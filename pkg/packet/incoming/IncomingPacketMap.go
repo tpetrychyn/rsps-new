@@ -28,6 +28,7 @@ const NoTimeoutPacketId = 22
 const MouseMovePacketId = 34
 const WindowStatusPacketId = 35
 const MouseClickPacketId = 41
+const MoveMinimapClickPacketId = 52
 const EventAppletFocusPacketId = 73
 const MapBuildCompletePacketId = 76
 const MoveGameClickPacketId = 96
@@ -50,6 +51,10 @@ var Packets = map[byte]*PacketDefinition{
 		PacketType: FIXED,
 		Length:     6,
 		Handler:    new(IgnorePacket),
+	},
+	MoveMinimapClickPacketId: {
+		PacketType: VARIABLE_BYTE,
+		Handler:    new(MoveGameClickPacket),
 	},
 	NoTimeoutPacketId: {
 		PacketType: FIXED,

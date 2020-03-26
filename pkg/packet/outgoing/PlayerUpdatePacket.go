@@ -24,9 +24,6 @@ func NewPlayerUpdatePacket(p *models.Actor) *PlayerUpdatePacket {
 
 	if p.Movement.Teleported {
 		// teleport segment
-		if p.Movement.LastPosition == nil {
-			p.Movement.LastPosition = p.Movement.Position
-		}
 		diffX := p.Movement.Position.X - p.Movement.LastPosition.X
 		diffZ := p.Movement.Position.Y - p.Movement.LastPosition.Y
 		diffH := p.Movement.Position.Height - p.Movement.LastPosition.Height
@@ -35,10 +32,10 @@ func NewPlayerUpdatePacket(p *models.Actor) *PlayerUpdatePacket {
 		stream.WriteBits(1, p.UpdateMask.UpdateRequired()) // update pending
 		stream.WriteBits(2, 3)
 
-		stream.WriteBits(1, 0) // tiles within viewing distance
+		stream.WriteBits(1, 1) // tiles within viewing distance
 		stream.WriteBits(2, uint(diffH&0x3))
-		stream.WriteBits(5, uint(diffX&0x1F))
-		stream.WriteBits(5, uint(diffZ&0x1F))
+		stream.WriteBits(14, uint(diffX&0x3FFF))
+		stream.WriteBits(14, uint(diffZ&0x3FFF))
 	} else if p.Movement.WalkDirection != models.Direction.None {
 		dx := DirectionDeltaX[p.Movement.WalkDirection.PlayerValue]
 		dy := DirectionDeltaY[p.Movement.WalkDirection.PlayerValue]
