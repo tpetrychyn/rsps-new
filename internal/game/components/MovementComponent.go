@@ -99,8 +99,8 @@ func (m *MovementComponent) calculateRoute(dest *models.Tile) {
 					if tile.X == start.X && tile.Y == start.Y {
 						return
 					}
-					deltaX := int(tile.X) - int(tile.Head.X)
-					deltaY := int(tile.Y) - int(tile.Head.Y)
+					deltaX := tile.X - tile.Head.X
+					deltaY := tile.Y - tile.Head.Y
 					direction := models.DirectionFromDeltas(deltaX, deltaY)
 					tile.Direction = direction
 					m.steps = append([]*models.Step{tile}, m.steps...)
@@ -129,11 +129,11 @@ func containsTile(arr []*models.Step, tile *models.Step) bool {
 }
 
 func (m *MovementComponent) IsBlocked(from, dest *models.Step) bool {
-	deltaX := int(dest.X) - int(from.X)
-	deltaY := int(dest.Y) - int(from.Y)
+	deltaX := dest.X - from.X
+	deltaY := dest.Y - from.Y
 	direction := models.DirectionFromDeltas(deltaX, deltaY)
 	chunk := m.world.GetOrLoadChunk(from.Tile)
-	if chunk.CollisionMatrix[0].IsBlocked(int(from.X), int(from.Y), direction) {
+	if chunk.CollisionMatrix[m.movement.Position.Height].IsBlocked(from.X, from.Y, direction) {
 		return true
 	}
 
@@ -141,7 +141,7 @@ func (m *MovementComponent) IsBlocked(from, dest *models.Step) bool {
 		for _, d := range direction.GetDiagonalComponents() {
 			step := from.Step(d)
 			chunk := m.world.GetOrLoadChunk(step)
-			if chunk.CollisionMatrix[0].IsBlocked(int(step.X), int(step.Y), d.GetOpposite()) {
+			if chunk.CollisionMatrix[m.movement.Position.Height].IsBlocked(step.X, step.Y, d.GetOpposite()) {
 				return true
 			}
 		}

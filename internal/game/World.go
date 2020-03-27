@@ -5,12 +5,11 @@ import (
 	"github.com/tpetrychyn/osrs-cache-parser/pkg/archives"
 	rsModels "github.com/tpetrychyn/osrs-cache-parser/pkg/models"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/models"
-	"github.com/tpetrychyn/rsps-comm-test/pkg/models/collision"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 )
 
 type World struct {
-	Chunks  map[string]*models.Chunk
+	Chunks map[string]*models.Chunk
 }
 
 func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
@@ -35,15 +34,15 @@ func (w *World) GetOrLoadChunk(tile *models.Tile) *models.Chunk {
 	mapArchive := archives.NewMapLoader(utils.GetCache())
 	blocked, bridges := mapArchive.LoadBlockedTiles(regionId)
 	for _, v := range blocked {
-		if !chunk.Contains(&models.Tile{X: uint16(v.X), Y: uint16(v.Y)}) {
+		if !chunk.Contains(&models.Tile{X: v.X, Y: v.Y}) {
 			continue
 		}
-		w.PutTile(&models.Tile{X: uint16(v.X), Y: uint16(v.Y)}, models.NESW...)
+		w.PutTile(&models.Tile{X: v.X, Y: v.Y, Height: v.Height}, models.NESW...)
 	}
 
 objectCollisionLoop:
 	for _, obj := range objArray {
-		if !chunk.Contains(&models.Tile{X: uint16(obj.WorldX), Y: uint16(obj.WorldY)}) {
+		if !chunk.Contains(&models.Tile{X: obj.WorldX, Y: obj.WorldY}) {
 			continue
 		}
 
@@ -69,30 +68,30 @@ objectCollisionLoop:
 		}
 
 		tile := &models.Tile{
-			X:      uint16(obj.WorldX),
-			Y:      uint16(obj.WorldY),
-			Height: uint16(height),
+			X:      obj.WorldX,
+			Y:      obj.WorldY,
+			Height: height,
 		}
-		if int(obj.Type) == collision.ObjectTypes.FloorDecoration {
+		if int(obj.Type) == models.ObjectTypes.FloorDecoration {
 			if def.Interactive && def.Solid {
 				w.PutTile(tile, models.NESW...)
 			}
-		} else if int(obj.Type) >= collision.ObjectTypes.DiagonalWall && int(obj.Type) < collision.ObjectTypes.FloorDecoration {
+		} else if int(obj.Type) >= models.ObjectTypes.DiagonalWall && int(obj.Type) < models.ObjectTypes.FloorDecoration {
 			for dx := 0; dx < width; dx++ {
 				for dy := 0; dy < length; dy++ {
 					tile := &models.Tile{
-						X:      uint16(obj.WorldX+dx),
-						Y:      uint16(obj.WorldY+dy),
-						Height: uint16(height),
+						X:      obj.WorldX + dx,
+						Y:      obj.WorldY + dy,
+						Height: height,
 					}
 					w.PutTile(tile, models.NESW...)
 				}
 			}
-		} else if int(obj.Type) == collision.ObjectTypes.LengthwiseWall {
+		} else if int(obj.Type) == models.ObjectTypes.LengthwiseWall {
 			w.PutWall(tile, models.WNES[int(obj.Orientation)])
-		} else if int(obj.Type) == collision.ObjectTypes.TriangularCorner || int(obj.Type) == collision.ObjectTypes.RectangularCorner {
+		} else if int(obj.Type) == models.ObjectTypes.TriangularCorner || int(obj.Type) == models.ObjectTypes.RectangularCorner {
 			w.PutWall(tile, models.WNES_DIAGONAL[int(obj.Orientation)])
-		} else if int(obj.Type) == collision.ObjectTypes.WallCorner {
+		} else if int(obj.Type) == models.ObjectTypes.WallCorner {
 			w.PutLargeCornerWall(tile, models.WNES_DIAGONAL[int(obj.Orientation)])
 		}
 	}
@@ -122,9 +121,9 @@ func (w *World) PutLargeCornerWall(tile *models.Tile, dir models.DirectionType) 
 }
 
 func unWalkable(def *rsModels.ObjectDef, typ int) bool {
-	isSolidFloorDecoration := typ == collision.ObjectTypes.FloorDecoration && def.Interactive
-	isRoof := typ >= collision.ObjectTypes.DiagonalInteractable && typ < collision.ObjectTypes.FloorDecoration && def.Solid
-	isWall := (typ >= collision.ObjectTypes.LengthwiseWall && typ <= collision.ObjectTypes.RectangularCorner || typ == collision.ObjectTypes.DiagonalWall) && def.Solid
-	isSolidInteractable := (typ == collision.ObjectTypes.DiagonalInteractable || typ == collision.ObjectTypes.Interactable) && def.Solid
+	isSolidFloorDecoration := typ == models.ObjectTypes.FloorDecoration && def.Interactive
+	isRoof := typ >= models.ObjectTypes.DiagonalInteractable && typ < models.ObjectTypes.FloorDecoration && def.Solid
+	isWall := (typ >= models.ObjectTypes.LengthwiseWall && typ <= models.ObjectTypes.RectangularCorner || typ == models.ObjectTypes.DiagonalWall) && def.Solid
+	isSolidInteractable := (typ == models.ObjectTypes.DiagonalInteractable || typ == models.ObjectTypes.Interactable) && def.Solid
 	return isSolidFloorDecoration || isRoof || isWall || isSolidInteractable
 }

@@ -16,7 +16,7 @@ func (m *MoveGameClickPacket) HandlePacket(player *entities.Player, packet *pack
 
 	log.Printf("x %d y %d", x, y)
 	player.MovementComponent.MoveTo(&models.Tile{
-		X: x,
-		Y: y,
+		X: int(x),
+		Y: int(y),
 	})
 }

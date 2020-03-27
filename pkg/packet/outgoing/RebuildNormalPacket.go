@@ -56,7 +56,7 @@ func (r *RebuildNormalPacket) GetRegionXteas() []byte {
 	for x:=lx;x<=rx;x++ {
 		for z:=lz;z<=rz;z++ {
 			if !forceSend || z != 49 && z != 149 && z != 147 && x != 50 && (x != 49 || z != 47) {
-				region := z + (x << 8)
+				region := uint16(z + (x << 8))
 				keys := utils.GlobalXteaDefs[region]
 				binary.Write(buf, binary.BigEndian, keys)
 				count++

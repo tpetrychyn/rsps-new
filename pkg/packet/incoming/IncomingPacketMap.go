@@ -33,6 +33,11 @@ const EventAppletFocusPacketId = 73
 const MapBuildCompletePacketId = 76
 const MoveGameClickPacketId = 96
 
+const IfButtonPacketId0 = 68
+const IfButtonPacketId1 = 21
+const IfButtonPacketId2 = 48
+const IfButtonPacketId3 = 19
+
 var Packets = map[byte]*PacketDefinition{
 	IgnorePacketId: {
 		PacketType: VARIABLE_BYTE,
@@ -74,5 +79,25 @@ var Packets = map[byte]*PacketDefinition{
 	MoveGameClickPacketId: {
 		PacketType: VARIABLE_BYTE,
 		Handler:    new(MoveGameClickPacket),
+	},
+	IfButtonPacketId0: {
+		PacketType: FIXED,
+		Length:     8,
+		Handler:    new(IfButtonPacket),
+	},
+	IfButtonPacketId1: {
+		PacketType: FIXED,
+		Length:     8,
+		Handler:    new(IfButtonPacket),
+	},
+	IfButtonPacketId2: {
+		PacketType: FIXED,
+		Length:     8,
+		Handler:    new(IfButtonPacket),
+	},
+	IfButtonPacketId3: {
+		PacketType: FIXED,
+		Length:     8,
+		Handler:    new(IfButtonPacket),
 	},
 }

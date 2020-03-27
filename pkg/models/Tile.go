@@ -3,9 +3,9 @@ package models
 import "math"
 
 type Tile struct {
-	X      uint16
-	Y      uint16
-	Height uint16
+	X      int
+	Y      int
+	Height int
 }
 
 func (p *Tile) To30BitInt() int32 {
@@ -17,33 +17,33 @@ func (p *Tile) ToChunkBase() *Tile {
 }
 
 func (p *Tile) ToRegionId() int {
-	return int((p.X>>6)<<8 | p.Y>>6)
+	return (p.X>>6)<<8 | p.Y>>6
 }
 
 func (p *Tile) ToLocal(other *Tile) *Tile {
 	return &Tile{
-		X:      uint16(((int(other.X) >> 3) - (int(p.X)>>3))<<3),
-		Y:      uint16(((int(other.Y) >> 3) - (int(p.Y)>>3))<<3),
+		X:     ((other.X >> 3) - (p.X>>3))<<3,
+		Y:      ((other.Y >> 3) - (int(p.Y)>>3))<<3,
 		Height: p.Height,
 	}
 }
 
 func (p *Tile) Step(dir DirectionType) *Tile {
 	return &Tile{
-		X:      p.X + uint16(dir.GetDeltaX()),
-		Y:      p.Y + uint16(dir.GetDeltaY()),
+		X:      p.X + dir.GetDeltaX(),
+		Y:      p.Y + dir.GetDeltaY(),
 		Height: p.Height,
 	}
 }
 
 func (p *Tile) IsWithinRadius(tile *Tile, radius int) bool {
-	dx := int(math.Abs(float64(int(p.X) - int(tile.X))))
-	dy := int(math.Abs(float64(int(p.Y) - int(tile.Y))))
+	dx := int(math.Abs(float64(p.X - tile.X)))
+	dy := int(math.Abs(float64(p.Y - tile.Y)))
 	return dx <= radius && dy <= radius
 }
 
 func (p *Tile) DistanceTo(other *Tile) int {
 	dx := p.X - other.X
 	dy := p.Y - other.Y
-	return int(math.Ceil(math.Sqrt(float64(dx*dx) + float64(dy*dy))))
+	return int(math.Sqrt(float64(dx*dx) + float64(dy*dy)))
 }

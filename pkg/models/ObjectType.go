@@ -1,4 +1,4 @@
-package collision
+package models
 
 type objectTypeStruct struct {
 	LengthwiseWall             int

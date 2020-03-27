@@ -6,8 +6,10 @@ import (
 	"encoding/binary"
 	"github.com/tpetrychyn/isaac"
 	"github.com/tpetrychyn/rsps-comm-test/internal/game/entities"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/models/interfaces"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/packet"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/packet/incoming"
+	"log"
 	"net"
 )
 
@@ -18,7 +20,8 @@ type Client struct {
 	encryptor       *isaac.ISAAC
 	decryptor       *isaac.ISAAC
 
-	Player *entities.Player
+	DisplayMode interfaces.DisplayModeType
+	Player      *entities.Player
 }
 
 func NewClient(conn net.Conn, encryptor *isaac.ISAAC, decryptor *isaac.ISAAC, player *entities.Player) *Client {
@@ -59,11 +62,11 @@ func (c *Client) upstreamListener() {
 			return
 		}
 		opcode := byte(uint32(by) - (c.decryptor.Rand() & 0xFF))
-		//log.Printf("opcode %+v", opcode)
 
 		// map opcode to packet def'n
 		packetDef := incoming.Packets[opcode]
 		if packetDef == nil {
+			log.Printf("opcode %+v", opcode)
 			continue
 		}
 

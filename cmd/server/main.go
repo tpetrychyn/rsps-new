@@ -8,6 +8,7 @@ import (
 	"github.com/tpetrychyn/rsps-comm-test/internal/game/entities"
 	rsNet "github.com/tpetrychyn/rsps-comm-test/internal/net"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/models"
+	"github.com/tpetrychyn/rsps-comm-test/pkg/models/interfaces"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/packet/outgoing"
 	"github.com/tpetrychyn/rsps-comm-test/pkg/utils"
 	"log"
@@ -111,7 +112,17 @@ func main() {
 
 			client.DownstreamQueue <- &outgoing.RebuildLoginPacket{Position: player.Movement.Position}
 
-			client.DownstreamQueue <- &outgoing.IfOpenTopPacket{} // main screen interface?
+			client.DownstreamQueue <- &outgoing.IfOpenTopPacket{Top: client.DisplayMode.GetDisplayComponentId()} // main screen interface
+
+			// chat box id - 162, fixedChild = 24, resizeChild = 29, resizeListChild = 31
+			for _, v := range interfaces.InterfaceDestinations {
+				client.DownstreamQueue <- &outgoing.IfOpenSubPacket{
+					InterfaceId: v.InterfaceId,
+					Parent:      client.DisplayMode.GetDisplayComponentId(),
+					Child:       v.FixedChildId,
+				}
+			}
+
 
 			client.Player.Movement.IsRunning = true
 
